@@ -19,6 +19,21 @@ struct HomeView: View {
 					.accessibilityLabel("프레임 이미지")
 			}
 			.frame(width: 260, height: 260)
+			.overlay(alignment: .topTrailing) {
+				if mode == .sleep {
+					Text("zzZ")
+						.font(.system(size: 28, weight: .semibold, design: .rounded))
+						.foregroundColor(Color.blue.opacity(0.9))
+						.padding(.horizontal, 8)
+						.padding(.vertical, 4)
+						.background(
+							Capsule().fill(Color.white.opacity(0.6))
+						)
+						.rotationEffect(.degrees(-12))
+						.padding(.top, 10)
+						.padding(.trailing, 10)
+				}
+			}
 			.shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
 
 			HStack(spacing: 12) {
