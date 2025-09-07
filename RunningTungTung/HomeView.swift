@@ -5,6 +5,7 @@ struct HomeView: View {
 	private enum Mode { case none, run, sleep }
 	@State private var mode: Mode = .none
 	@State private var frameIndex: Int = 0 // 0 or 1
+	@State private var windPhase: Bool = false
 	private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
 	var body: some View {
@@ -32,6 +33,12 @@ struct HomeView: View {
 						.rotationEffect(.degrees(-12))
 						.padding(.top, 10)
 						.padding(.trailing, 10)
+				}
+			}
+			.overlay(alignment: .trailing) {
+				if mode == .run {
+					WindStreaks(phase: windPhase)
+						.padding(.trailing, 6)
 				}
 			}
 			.shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
@@ -63,9 +70,11 @@ struct HomeView: View {
 		.onReceive(timer) { _ in
 			guard mode != .none else { return }
 			frameIndex = (frameIndex + 1) % 2
+			if mode == .run { windPhase.toggle() }
 		}
 		.onChange(of: mode) { _, newValue in
 			if newValue != .none { frameIndex = 0 }
+			windPhase = false
 		}
 	}
 
@@ -91,6 +100,32 @@ struct HomeView: View {
 	private var lightGreen: Color {
 		// 연두색 느낌의 연한 초록색
 		Color(red: 0.9, green: 1.0, blue: 0.85)
+	}
+}
+
+// MARK: - Decorative Views
+private struct WindStreaks: View {
+	let phase: Bool
+
+	var body: some View {
+		VStack(spacing: 6) {
+			Capsule()
+				.fill(Color.white.opacity(0.85))
+				.frame(width: 56, height: 6)
+				.blur(radius: 0.5)
+
+			Capsule()
+				.fill(Color.white.opacity(0.6))
+				.frame(width: 40, height: 5)
+
+			Capsule()
+				.fill(Color.white.opacity(0.45))
+				.frame(width: 28, height: 4)
+		}
+		.rotationEffect(.degrees(-12))
+		.offset(x: phase ? 0 : -10)
+		.opacity(phase ? 0.9 : 0.35)
+		.animation(.easeOut(duration: 0.5), value: phase)
 	}
 }
 
