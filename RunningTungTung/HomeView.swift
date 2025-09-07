@@ -9,10 +9,17 @@ struct HomeView: View {
 
 	var body: some View {
 		VStack(spacing: 16) {
-			Image(currentImageName)
-				.resizable()
-				.scaledToFit()
-				.accessibilityLabel("프레임 이미지")
+			ZStack {
+				RoundedRectangle(cornerRadius: 16, style: .continuous)
+					.fill(Color.white.opacity(0.2))
+				Image(currentImageName)
+					.resizable()
+					.scaledToFit()
+					.padding(16)
+					.accessibilityLabel("프레임 이미지")
+			}
+			.frame(width: 260, height: 260)
+			.shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
 
 			HStack(spacing: 12) {
 				Button(action: toggleRun) {
