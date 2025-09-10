@@ -30,7 +30,6 @@ struct HomeView: View {
 			// 메인 컨텐츠
 			mainContent
 				.offset(x: isMenuOpen ? 180 : 0)
-				.scaleEffect(isMenuOpen ? 0.95 : 1)
 				.animation(.easeInOut(duration: 0.28), value: isMenuOpen)
 				.allowsHitTesting(!isMenuOpen)
 
@@ -43,7 +42,7 @@ struct HomeView: View {
 					.background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 			}
 			.padding(.leading, 14)
-			.padding(.top, 14)
+			.padding(.top, 60) // 기존 14 -> 60 으로 내려서 다이나믹 아일랜드 아래 위치
 		}
 		.background(lightGreen)
 		.ignoresSafeArea()
@@ -61,10 +60,11 @@ struct HomeView: View {
 
 	// 메인 컨텐츠 분리
 	private var mainContent: some View {
-		VStack(spacing: 20) {
+		VStack(spacing: 28) {
+			Spacer(minLength: 20)
 			ZStack {
 				RoundedRectangle(cornerRadius: 16, style: .continuous)
-					.fill(Color.white.opacity(0.22))
+					.fill(Color.white.opacity(0.18))
 				Image(currentImageName)
 					.resizable()
 					.scaledToFit()
@@ -74,13 +74,15 @@ struct HomeView: View {
 			.frame(width: 260, height: 260)
 			.overlay(alignment: .topTrailing) { sleepOverlay }
 			.overlay(alignment: .trailing) { runOverlay }
-			.shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
+			.shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 6)
 
 			modeButtons
+			Spacer(minLength: 30)
 		}
+		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.padding(.horizontal, 28)
-		.padding(.top, 90) // 메뉴 버튼 아래 여백
-		.padding(.bottom, 40)
+		.padding(.top, 10)
+		.padding(.bottom, 10)
 	}
 
 	private var sleepOverlay: some View {
