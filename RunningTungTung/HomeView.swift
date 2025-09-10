@@ -2,71 +2,52 @@ import SwiftUI
 import SwiftData
 
 struct HomeView: View {
-	private enum Mode { case none, run, sleep }
+	enum Mode { case none, run, sleep }
 	@State private var mode: Mode = .none
 	@State private var frameIndex: Int = 0 // 0 or 1
 	@State private var windPhase: Bool = false
+	@State private var isMenuOpen: Bool = false
+	@GestureState private var dragTranslation: CGSize = .zero
 	private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
 	var body: some View {
-		VStack(spacing: 16) {
-			ZStack {
-				RoundedRectangle(cornerRadius: 16, style: .continuous)
-					.fill(Color.white.opacity(0.2))
-				Image(currentImageName)
-					.resizable()
-					.scaledToFit()
-					.padding(16)
-					.accessibilityLabel("프레임 이미지")
-			}
-			.frame(width: 260, height: 260)
-			.overlay(alignment: .topTrailing) {
-				if mode == .sleep {
-					Text("zzZ")
-						.font(.system(size: 28, weight: .semibold, design: .rounded))
-						.foregroundColor(Color.blue.opacity(0.9))
-						.padding(.horizontal, 8)
-						.padding(.vertical, 4)
-						.background(
-							Capsule().fill(Color.white.opacity(0.6))
-						)
-						.rotationEffect(.degrees(-12))
-						.padding(.top, 10)
-						.padding(.trailing, 10)
-				}
-			}
-			.overlay(alignment: .trailing) {
-				if mode == .run {
-					WindStreaks(phase: windPhase)
-						.padding(.trailing, 6)
-				}
-			}
-			.shadow(color: Color.black.opacity(0.6), radius: 8, x: 0, y: 4)
+		ZStack(alignment: .topLeading) {
+			// 사이드 메뉴
+			SideMenuView(isOpen: $isMenuOpen, selectMode: setMode(_:))
+				.frame(width: 240)
+				.offset(x: isMenuOpen ? 0 : -260)
+				.accessibilityHidden(!isMenuOpen)
+				.animation(.easeInOut(duration: 0.28), value: isMenuOpen)
 
-			HStack(spacing: 12) {
-				Button(action: toggleRun) {
-					Text(mode == .run ? "정지" : "달리기")
-						.font(.headline)
-						.padding(.horizontal, 24)
-						.padding(.vertical, 10)
-						.background((mode == .run ? Color.red : Color.green).opacity(0.2))
-						.cornerRadius(8)
-				}
-
-				Button(action: toggleSleep) {
-					Text(mode == .sleep ? "정지" : "잠자기")
-						.font(.headline)
-						.padding(.horizontal, 24)
-						.padding(.vertical, 10)
-						.background((mode == .sleep ? Color.red : Color.blue).opacity(0.2))
-						.cornerRadius(8)
-				}
+			// DIM 레이어
+			if isMenuOpen {
+				Color.black.opacity(0.25)
+					.ignoresSafeArea()
+					.onTapGesture { toggleMenu() }
+					.transition(.opacity)
 			}
+
+			// 메인 컨텐츠
+			mainContent
+				.offset(x: isMenuOpen ? 180 : 0)
+				.scaleEffect(isMenuOpen ? 0.95 : 1)
+				.animation(.easeInOut(duration: 0.28), value: isMenuOpen)
+				.allowsHitTesting(!isMenuOpen)
+
+			// 메뉴 버튼 (항상 최상단)
+			Button(action: toggleMenu) {
+				Image(systemName: isMenuOpen ? "xmark" : "line.3.horizontal")
+					.font(.title2.weight(.bold))
+					.foregroundColor(.primary)
+					.padding(10)
+					.background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+			}
+			.padding(.leading, 14)
+			.padding(.top, 14)
 		}
-	.padding()
-	.frame(maxWidth: .infinity, maxHeight: .infinity)
-	.background(lightGreen)
-	.ignoresSafeArea()
+		.background(lightGreen)
+		.ignoresSafeArea()
+		.gesture(dragGesture)
 		.onReceive(timer) { _ in
 			guard mode != .none else { return }
 			frameIndex = (frameIndex + 1) % 2
@@ -76,6 +57,90 @@ struct HomeView: View {
 			if newValue != .none { frameIndex = 0 }
 			windPhase = false
 		}
+	}
+
+	// 메인 컨텐츠 분리
+	private var mainContent: some View {
+		VStack(spacing: 20) {
+			ZStack {
+				RoundedRectangle(cornerRadius: 16, style: .continuous)
+					.fill(Color.white.opacity(0.22))
+				Image(currentImageName)
+					.resizable()
+					.scaledToFit()
+					.padding(16)
+					.accessibilityLabel("프레임 이미지")
+			}
+			.frame(width: 260, height: 260)
+			.overlay(alignment: .topTrailing) { sleepOverlay }
+			.overlay(alignment: .trailing) { runOverlay }
+			.shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
+
+			modeButtons
+		}
+		.padding(.horizontal, 28)
+		.padding(.top, 90) // 메뉴 버튼 아래 여백
+		.padding(.bottom, 40)
+	}
+
+	private var sleepOverlay: some View {
+		Group {
+			if mode == .sleep {
+				Text("zzZ")
+					.font(.system(size: 26, weight: .semibold, design: .rounded))
+					.foregroundColor(Color.blue.opacity(0.9))
+					.padding(.horizontal, 8)
+					.padding(.vertical, 4)
+					.background(Capsule().fill(Color.white.opacity(0.55)))
+					.rotationEffect(.degrees(-12))
+					.padding(.top, 10)
+					.padding(.trailing, 10)
+			}
+		}
+	}
+
+	private var runOverlay: some View {
+		Group {
+			if mode == .run {
+				WindStreaks(phase: windPhase)
+					.padding(.trailing, 6)
+			}
+		}
+	}
+
+	private var modeButtons: some View {
+		HStack(spacing: 14) {
+			modeButton(title: mode == .run ? "정지" : "달리기",
+				color: mode == .run ? .red : .green) { toggleRun() }
+			modeButton(title: mode == .sleep ? "정지" : "잠자기",
+				color: mode == .sleep ? .red : .blue) { toggleSleep() }
+		}
+	}
+
+	private func modeButton(title: String, color: Color, action: @escaping () -> Void) -> some View {
+		Button(action: action) {
+			Text(title)
+				.font(.headline)
+				.padding(.vertical, 10)
+				.padding(.horizontal, 28)
+				.background(color.opacity(0.18))
+				.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+		}
+		.buttonStyle(.plain)
+	}
+
+	private func toggleMenu() { withAnimation { isMenuOpen.toggle() } }
+	private func setMode(_ new: Mode) { withAnimation { mode = new; isMenuOpen = false } }
+
+	// 드래그 제스처 (열기/닫기)
+	private var dragGesture: some Gesture {
+		DragGesture(minimumDistance: 15)
+			.updating($dragTranslation) { value, state, _ in state = value.translation }
+			.onEnded { value in
+				let dx = value.translation.width
+				if !isMenuOpen && dx > 80 { toggleMenu() }
+				else if isMenuOpen && dx < -80 { toggleMenu() }
+			}
 	}
 
 	private var currentImageName: String {
@@ -132,5 +197,62 @@ private struct WindStreaks: View {
 struct HomeView_Previews: PreviewProvider {
 	static var previews: some View {
 		HomeView()
+	}
+}
+
+// MARK: - Side Menu View
+struct SideMenuView: View {
+	@Binding var isOpen: Bool
+	let selectMode: (HomeView.Mode) -> Void
+
+	var body: some View {
+		VStack(alignment: .leading, spacing: 18) {
+			Text("메뉴")
+				.font(.title3.bold())
+				.padding(.bottom, 4)
+
+			menuButton(icon: "house", title: "정지") { selectMode(.none) }
+			menuButton(icon: "figure.run", title: "달리기") { selectMode(.run) }
+			menuButton(icon: "bed.double", title: "잠자기") { selectMode(.sleep) }
+
+			Divider().padding(.vertical, 6)
+
+			menuButton(icon: "xmark", title: "닫기") { withAnimation { isOpen = false } }
+
+			Spacer()
+		}
+		.padding(.top, 70)
+		.padding(.horizontal, 20)
+		.frame(maxWidth: .infinity, alignment: .leading)
+		.frame(maxHeight: .infinity)
+		.background(.ultraThinMaterial)
+		.overlay(alignment: .topTrailing) {
+			Button(action: { withAnimation { isOpen = false } }) {
+				Image(systemName: "chevron.left")
+					.font(.headline)
+					.padding(8)
+					.background(Color.primary.opacity(0.08), in: Circle())
+			}
+			.padding(.top, 40)
+			.padding(.trailing, 12)
+		}
+		.ignoresSafeArea()
+	}
+
+	@ViewBuilder
+	private func menuButton(icon: String, title: String, action: @escaping () -> Void) -> some View {
+		Button(action: action) {
+			HStack(spacing: 14) {
+				Image(systemName: icon)
+					.frame(width: 26)
+				Text(title)
+				Spacer(minLength: 0)
+			}
+			.font(.system(size: 16, weight: .medium))
+			.foregroundColor(.primary)
+			.padding(.vertical, 8)
+			.contentShape(Rectangle())
+		}
+		.buttonStyle(.plain)
 	}
 }
