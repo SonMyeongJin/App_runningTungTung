@@ -71,8 +71,12 @@ struct HomeView: View {
 
 	// 메인 컨텐츠 분리
 	private var mainContent: some View {
-		VStack(spacing: 28) {
+		VStack(spacing: 18) {
 			Spacer(minLength: 20)
+
+			// 상태 라벨
+			statusLabel
+
 			ZStack {
 				RoundedRectangle(cornerRadius: 16, style: .continuous)
 					.fill(Color.white.opacity(0.18))
@@ -86,8 +90,6 @@ struct HomeView: View {
 			.overlay(alignment: .topTrailing) { sleepOverlay }
 			.overlay(alignment: .trailing) { runOverlay }
 			.shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 6)
-
-			modeButtons
 			Spacer(minLength: 30)
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -121,25 +123,36 @@ struct HomeView: View {
 		}
 	}
 
-	private var modeButtons: some View {
-		HStack(spacing: 14) {
-			modeButton(title: mode == .run ? "정지" : "달리기",
-				color: mode == .run ? .red : .green) { toggleRun() }
-			modeButton(title: mode == .sleep ? "정지" : "잠자기",
-				color: mode == .sleep ? .red : .blue) { toggleSleep() }
+	// 상태 라벨 뷰
+	private var statusLabel: some View {
+		Group {
+			switch mode {
+			case .run:
+				labelView(text: "런닝중", color: .green)
+			case .sleep:
+				labelView(text: "숙면중", color: .blue)
+			case .none:
+				EmptyView()
+			}
 		}
+		.id(mode)
+		.transition(.opacity.combined(with: .move(edge: .top)))
+		.animation(.easeInOut(duration: 0.25), value: mode)
 	}
 
-	private func modeButton(title: String, color: Color, action: @escaping () -> Void) -> some View {
-		Button(action: action) {
-			Text(title)
-				.font(.headline)
-				.padding(.vertical, 10)
-				.padding(.horizontal, 28)
-				.background(color.opacity(0.18))
-				.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-		}
-		.buttonStyle(.plain)
+	private func labelView(text: String, color: Color) -> some View {
+		Text(text)
+			.font(.system(size: 52, weight: .bold, design: .rounded))
+			.foregroundStyle(.primary)
+			.padding(.vertical, 10)
+			.padding(.horizontal, 20)
+			.background(
+				Capsule().fill(.ultraThinMaterial)
+			)
+			.overlay(
+				Capsule().stroke(color.opacity(0.35), lineWidth: 2)
+			)
+			.shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
 	}
 
 	private func toggleMenu() { withAnimation { isMenuOpen.toggle() } }
