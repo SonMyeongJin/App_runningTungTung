@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import CoreLocation
 
 struct HomeView: View {
 	enum Mode { case none, run, sleep }
@@ -8,6 +9,7 @@ struct HomeView: View {
 	@State private var windPhase: Bool = false
 	@State private var isMenuOpen: Bool = false
 	@GestureState private var dragTranslation: CGSize = .zero
+	@StateObject private var motion = LocationMotionManager()
 	private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
 	var body: some View {
@@ -55,6 +57,15 @@ struct HomeView: View {
 		.onChange(of: mode) { _, newValue in
 			if newValue != .none { frameIndex = 0 }
 			windPhase = false
+		}
+		.onAppear {
+			motion.requestAuthorization()
+			motion.start()
+		}
+		.onReceive(motion.$isMoving.removeDuplicates()) { moving in
+			withAnimation(.easeInOut(duration: 0.2)) {
+				mode = moving ? .run : .sleep
+			}
 		}
 	}
 

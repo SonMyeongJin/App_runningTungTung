@@ -2,9 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>달리기/잠자기 전환을 위해 사용자의 움직임을 감지합니다.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>달리기/잠자기 전환을 위해 사용자의 움직임을 감지합니다.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>달리기/잠자기 전환을 위해 사용자의 움직임을 감지합니다.</string>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>remote-notification</string>
+		<string>location</string>
 	</array>
 </dict>
 </plist>
