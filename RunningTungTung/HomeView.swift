@@ -10,6 +10,8 @@ struct HomeView: View {
 	@State private var isMenuOpen: Bool = false
 	@GestureState private var dragTranslation: CGSize = .zero
 	@StateObject private var motion = LocationMotionManager()
+	@State private var modeStartedAt: Date? = nil
+	private let secondTicker = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
 	private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
 	var body: some View {
@@ -54,9 +56,15 @@ struct HomeView: View {
 			frameIndex = (frameIndex + 1) % 2
 			if mode == .run { windPhase.toggle() }
 		}
+		.onReceive(secondTicker) { _ in
+			// 단순히 뷰 갱신 트리거 용도 (durationLabel 업데이트)
+			guard mode != .none else { return }
+			_ = modeStartedAt
+		}
 		.onChange(of: mode) { _, newValue in
 			if newValue != .none { frameIndex = 0 }
 			windPhase = false
+			modeStartedAt = (newValue == .none) ? nil : Date()
 		}
 		.onAppear {
 			motion.requestAuthorization()
@@ -90,6 +98,9 @@ struct HomeView: View {
 			.overlay(alignment: .topTrailing) { sleepOverlay }
 			.overlay(alignment: .trailing) { runOverlay }
 			.shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 6)
+
+			// 경과 시간 라벨 (캐릭터 아래)
+			durationLabel
 			Spacer(minLength: 30)
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -153,6 +164,43 @@ struct HomeView: View {
 				Capsule().stroke(color.opacity(0.35), lineWidth: 2)
 			)
 			.shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+	}
+
+	// 경과 시간 라벨
+	private var durationLabel: some View {
+		Group {
+			if let text = durationText {
+				Text(text)
+					.font(.system(size: 22, weight: .semibold, design: .rounded))
+					.foregroundColor(.primary)
+					.transition(.opacity)
+			}
+		}
+	}
+
+	private var durationText: String? {
+		guard let start = modeStartedAt, mode != .none else { return nil }
+		let elapsed = Date().timeIntervalSince(start)
+		switch mode {
+		case .sleep:
+			return sleepText(for: elapsed)
+		case .run:
+			return runText(for: elapsed)
+		case .none:
+			return nil
+		}
+	}
+
+	private func sleepText(for elapsed: TimeInterval) -> String {
+		let minutes = Int(elapsed / 60)
+		let hours = minutes / 60
+		let mins = minutes % 60
+		return "\(hours)시간 \(mins)분째 숙면중"
+	}
+
+	private func runText(for elapsed: TimeInterval) -> String {
+		let minutes = max(1, Int(elapsed / 60))
+		return "\(minutes)분째 런닝중"
 	}
 
 	private func toggleMenu() { withAnimation { isMenuOpen.toggle() } }
