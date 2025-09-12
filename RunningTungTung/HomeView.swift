@@ -11,6 +11,8 @@ struct HomeView: View {
 	@GestureState private var dragTranslation: CGSize = .zero
 	@StateObject private var motion = LocationMotionManager()
 	@State private var modeStartedAt: Date? = nil
+	@State private var manualRunActive: Bool = false
+	@State private var lastMotionAt: Date? = nil
 	private let secondTicker = Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()
 	private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
@@ -60,6 +62,14 @@ struct HomeView: View {
 			// 단순히 뷰 갱신 트리거 용도 (durationLabel 업데이트)
 			guard mode != .none else { return }
 			_ = modeStartedAt
+			// 수동 달리기 중 5분간 움직임이 없으면 잠자기로 복귀
+			if manualRunActive {
+				let noMoveSince = lastMotionAt.map { Date().timeIntervalSince($0) } ?? .infinity
+				if !motion.isMoving && noMoveSince >= 5 * 60 {
+					manualRunActive = false
+					withAnimation(.easeInOut(duration: 0.2)) { mode = .sleep }
+				}
+			}
 		}
 		.onChange(of: mode) { _, newValue in
 			if newValue != .none { frameIndex = 0 }
@@ -71,8 +81,14 @@ struct HomeView: View {
 			motion.start()
 		}
 		.onReceive(motion.$isMoving.removeDuplicates()) { moving in
-			withAnimation(.easeInOut(duration: 0.2)) {
-				mode = moving ? .run : .sleep
+			if moving {
+				lastMotionAt = Date()
+				withAnimation(.easeInOut(duration: 0.2)) { mode = .run }
+			} else {
+				// 수동 달리기 중이면 즉시 잠자기로 떨어뜨리지 않고 5분 타임아웃을 기다림
+				if !manualRunActive {
+					withAnimation(.easeInOut(duration: 0.2)) { mode = .sleep }
+				}
 			}
 		}
 	}
@@ -204,7 +220,18 @@ struct HomeView: View {
 	}
 
 	private func toggleMenu() { withAnimation { isMenuOpen.toggle() } }
-	private func setMode(_ new: Mode) { withAnimation { mode = new; isMenuOpen = false } }
+	private func setMode(_ new: Mode) {
+		withAnimation {
+			isMenuOpen = false
+			mode = new
+			if new == .run {
+				manualRunActive = true
+				lastMotionAt = Date()
+			} else if new == .sleep {
+				manualRunActive = false
+			}
+		}
+	}
 
 	// 드래그 제스처 (열기/닫기)
 	private var dragGesture: some Gesture {
