@@ -18,14 +18,13 @@ struct HomeView: View {
 
 	var body: some View {
 		ZStack(alignment: .topLeading) {
-			// 사이드 메뉴
-			SideMenuView(isOpen: $isMenuOpen, selectMode: setMode(_:))
-				.frame(width: 240)
-				.offset(x: isMenuOpen ? 0 : -260)
-				.accessibilityHidden(!isMenuOpen)
+			// 메인 컨텐츠
+			mainContent
+				.offset(x: isMenuOpen ? 180 : 0)
 				.animation(.easeInOut(duration: 0.28), value: isMenuOpen)
+				.allowsHitTesting(!isMenuOpen)
 
-			// DIM 레이어
+			// DIM 레이어 (메인 컨텐츠 위, 메뉴 아래)
 			if isMenuOpen {
 				Color.black.opacity(0.25)
 					.ignoresSafeArea()
@@ -33,11 +32,12 @@ struct HomeView: View {
 					.transition(.opacity)
 			}
 
-			// 메인 컨텐츠
-			mainContent
-				.offset(x: isMenuOpen ? 180 : 0)
+			// 사이드 메뉴 (DIM 위에 위치시켜 탭 가능)
+			SideMenuView(isOpen: $isMenuOpen, selectMode: setMode(_:))
+				.frame(width: 240)
+				.offset(x: isMenuOpen ? 0 : -260)
+				.accessibilityHidden(!isMenuOpen)
 				.animation(.easeInOut(duration: 0.28), value: isMenuOpen)
-				.allowsHitTesting(!isMenuOpen)
 
 			// 메뉴 버튼 (항상 최상단)
 			Button(action: toggleMenu) {
